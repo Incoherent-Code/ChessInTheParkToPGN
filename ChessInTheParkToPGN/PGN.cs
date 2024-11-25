@@ -11,6 +11,7 @@ namespace ChessInTheParkToPGN {
       /// Black: Black player name
       /// </summary>
       public Dictionary<string, string> metadata = new Dictionary<string, string>() {
+         { "Event", "Discord Chess In The Park" },
          { "Site", "discord.com" }
       };
       /// <summary>
