@@ -19,9 +19,9 @@ namespace ChessInTheParkToPGN {
       /// </summary>
       public List<string> moves = [];
       /// <summary>
-      /// Whether black or white won
+      /// Whether black or white won, or draw if null
       /// </summary>
-      public bool whiteWon = true;
+      public bool? whiteWon;
 
       public void saveToFile(Stream file) {
          foreach (var meta in metadata) {
@@ -38,7 +38,10 @@ namespace ChessInTheParkToPGN {
             }
             file.Write(UTF8.GetBytes(line));
          }
-         file.Write(UTF8.GetBytes((whiteWon) ? "1-0" : "0-1"));
+         if (whiteWon != null)
+            file.Write(UTF8.GetBytes((whiteWon == true) ? "1-0" : "0-1"));
+         else
+            file.Write(UTF8.GetBytes("1/2-1/2"));
       }
    }
 }
