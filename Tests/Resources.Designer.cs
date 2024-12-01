@@ -79,5 +79,15 @@ namespace Tests {
                 return ((byte[])(obj));
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] GIF1 {
+            get {
+                object obj = ResourceManager.GetObject("GIF1", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
     }
 }

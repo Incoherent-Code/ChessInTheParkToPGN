@@ -37,7 +37,7 @@ namespace ChessInTheParkToPGN {
       /// <param name="other"></param>
       /// <param name="maxDifference">Max difference any one value (R,G, or B) can have</param>
       /// <returns></returns>
-      public (int, int)[] Compare(PixelSummary other, int maxDifference = 1) {
+      public (int x, int y)[] Compare(PixelSummary other, int maxDifference = 1) {
          List<(int, int)> output = [];
          for (int x = 0; x < 8; x++) {
             for (int y = 0; y < 8; y++) {
@@ -80,14 +80,14 @@ namespace ChessInTheParkToPGN {
          }
          return output;
       }
-      private Rgb24 averagePixels(Rgb24[] pixels) {
+      public static Rgb24 averagePixels(Rgb24[] pixels) {
          return new Rgb24(
             Average(pixels.Select(x => x.R).ToArray()),
             Average(pixels.Select(x => x.G).ToArray()),
             Average(pixels.Select(x => x.B).ToArray())
          );
       }
-      private byte Average(params byte[] bytes) {
+      private static byte Average(params byte[] bytes) {
          return (byte)(bytes.Sum((x) => x) / bytes.Length);
       }
    }
