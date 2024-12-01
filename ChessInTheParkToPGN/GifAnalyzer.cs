@@ -1,5 +1,7 @@
 ﻿using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
+using Tesseract;
 
 
 namespace ChessInTheParkToPGN {
@@ -8,6 +10,7 @@ namespace ChessInTheParkToPGN {
       public string whitePlayer = "Player1";
       public string blackPlayer = "Player2";
       public int moves;
+      private static readonly string lang = "eng";
 
       public List<(int x, int y)[]> differences = [];
       public GifAnalyzer(Stream fileStream) {
@@ -17,6 +20,45 @@ namespace ChessInTheParkToPGN {
          }
          this.moves = image.Frames.Count;
          var Frames = image.Frames;
+
+         //Use OCR to get player names
+         var opposingStream = new MemoryStream();
+         using (var opposingNameImage = image.Frames.CloneFrame(0)) {
+            opposingNameImage.Mutate(i => i
+               .Crop(new Rectangle(624, 0, 175, 65))
+               //More optimal settings for Tesseract
+               .Grayscale()
+               .Resize(175 * 4, 65 * 4)
+            );
+            opposingNameImage.SaveAsBmp(opposingStream);
+         }
+         string opposingPlayerName;
+         var currentStream = new MemoryStream();
+         using (var currentNameImage = image.Frames.CloneFrame(0)) {
+            currentNameImage.Mutate(i => i
+               .Crop(new Rectangle(624, 381, 175, 65))
+               .Grayscale()
+               .Resize(175 * 4, 65 * 4)
+            );
+            currentNameImage.SaveAsBmp(currentStream);
+         }
+         string currentPlayerName;
+         if (Directory.Exists("tessdata") && File.Exists($"tessdata/{lang}.traineddata")) {
+            using (TesseractEngine TEngine = new TesseractEngine("tessdata", lang, EngineMode.Default)) {
+               using (var page = TEngine.Process(Pix.LoadFromMemory(opposingStream.ToArray()))) {
+                  opposingPlayerName = page.GetText().Trim();
+               }
+               using (var page = TEngine.Process(Pix.LoadFromMemory(currentStream.ToArray()))) {
+                  currentPlayerName = page.GetText().Trim();
+               }
+            }
+         }
+         else {
+            Program.ErrorMessage("Could not load the training data for Tesseract. Please ensure that the English tesseract data is placed in ./tessdata. Name recognition will not run.");
+            currentPlayerName = "Player1";
+            opposingPlayerName = "Player2";
+         }
+
          for (int i = 1; i < Frames.Count; i++) {
             var lastFrame = new PixelSummary(Frames[i - 1]);
             var currentFrame = new PixelSummary(Frames[i]);
@@ -29,6 +71,9 @@ namespace ChessInTheParkToPGN {
                }
                //If Second move is on this side, then this is from black POV
                fromBlackPOV = diff[1].y >= 4;
+               //Add player names
+               whitePlayer = fromBlackPOV ? currentPlayerName : opposingPlayerName;
+               blackPlayer = fromBlackPOV ? opposingPlayerName : currentPlayerName;
                //Determine the difference for the first move
                var startingPieces = lastFrame.summary.GetColumn(fromBlackPOV ? 0 : 6, fromBlackPOV ? 1 : 7);
                var startingPossibleSpaces = lastFrame.summary.GetColumn(fromBlackPOV ? 2 : 4, fromBlackPOV ? 3 : 5);
