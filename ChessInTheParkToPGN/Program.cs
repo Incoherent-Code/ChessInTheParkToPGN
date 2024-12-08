@@ -12,17 +12,21 @@ namespace ChessInTheParkToPGN {
             ErrorMessage("Please start the analyzer with a valid file path!");
             Environment.Exit(1);
          }
-         foreach (string arg in args) {
+         for (int i = 0; i < args.Length; i++) {
+            var arg = args[i];
             if (!File.Exists(arg)) {
                ErrorMessage($"Invalid file Path: {arg}");
                continue;
             }
             try {
                var game = new ChessGame(arg);
-               game.saveToFile(Path.Combine(Directory.GetCurrentDirectory(), Path.GetFileNameWithoutExtension(arg)) + ".pgn");
+               var fileName = Path.GetFileNameWithoutExtension(arg) + ".pgn";
+               var savePath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
+               game.saveToFile(savePath);
+               Console.WriteLine($"Saved {fileName} to \"{savePath}\"");
             }
             catch (Exception ex) {
-               ErrorMessage(ex.Message);
+               ErrorMessage($"Error reading Gif {i + 1}: " + ex.Message);
                if (Debugger.IsAttached)
                   throw;
             }
