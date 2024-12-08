@@ -72,8 +72,8 @@ namespace ChessInTheParkToPGN {
                //If Second move is on this side, then this is from black POV
                fromBlackPOV = diff[1].y >= 4;
                //Add player names
-               whitePlayer = fromBlackPOV ? currentPlayerName : opposingPlayerName;
-               blackPlayer = fromBlackPOV ? opposingPlayerName : currentPlayerName;
+               blackPlayer = fromBlackPOV ? currentPlayerName : opposingPlayerName;
+               whitePlayer = fromBlackPOV ? opposingPlayerName : currentPlayerName;
                //Determine the difference for the first move
                var startingPieces = lastFrame.summary.GetColumn(fromBlackPOV ? 0 : 6, fromBlackPOV ? 1 : 7);
                var startingPossibleSpaces = lastFrame.summary.GetColumn(fromBlackPOV ? 2 : 4, fromBlackPOV ? 3 : 5);
@@ -90,6 +90,12 @@ namespace ChessInTheParkToPGN {
                differences.Add([likelyMovedFromSpot, likelyMovedToSpot]);
             }
             differences.Add(diff);
+         }
+         //Invert board if from black pov
+         if (fromBlackPOV) {
+            differences = differences
+               .Select<(int x, int y)[], (int x, int y)[]>(x => x.Select(y => (7 - y.x, 7 - y.y)).ToArray())
+               .ToList();
          }
       }
       /// <summary>

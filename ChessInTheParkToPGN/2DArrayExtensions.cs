@@ -39,6 +39,18 @@
          }
          return output;
       }
-
+      /// <summary>
+      /// Similar to the findIndex in javascript, but returns all 2d indexes where the predicate is true.
+      /// </summary>
+      public static List<(int, int)> FindIndexes<T>(this T[,] array, Func<T, (int, int), bool> predicate) {
+         var output = new List<(int, int)>();
+         for (var x = 0; x < array.GetLength(0); x++) {
+            for (var y = 0; y < array.GetLength(1); y++) {
+               if (predicate(array[x, y], (x, y)))
+                  output.Add((x, y));
+            }
+         }
+         return output;
+      }
    }
 }

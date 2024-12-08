@@ -24,5 +24,15 @@ namespace Tests {
          var actual = array.GetColumn(1);
          CollectionAssert.AreEqual(expected, actual, "2D array should only return the specific part requested.");
       }
+      [TestMethod]
+      public void TestFindIndexes() {
+         var expected = new List<(int, int)>() {
+            (0, 2),
+            (1, 1),
+            (2, 0)
+         };
+         var actual = array.FindIndexes((x, _) => x == 9);
+         CollectionAssert.AreEqual(expected, actual, "Predicate should only return coordinates where 9 is present.");
+      }
    }
 }

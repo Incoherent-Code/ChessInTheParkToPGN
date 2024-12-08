@@ -68,7 +68,7 @@
                   continue;
                }
                else {
-                  throw new Exception("Could not identify move " + i);
+                  throw new Exception("Could not identify move " + (i + 1));
                }
             }
             var pieceInFirstSpot = state[diff[0].y, diff[0].x];
@@ -79,9 +79,29 @@
 
             //Build algebraic chess notation
             string algNotation = (pieceMoving.Item1 != Piece.Pawn) ? ((char)pieceMoving.Item1).ToString() : "";
-            //TODO: Ambiguous Piece Moves
+            bool isTaking = (pieceLandedon.Item1 != Piece.None);
+            var possiblePiecesToMove = state.FindIndexes((piece, index) => {
+               return piece == pieceMoving && GetPeicePossibleMoves((index.Item2, index.Item1)).Contains(newSpot);
+            });
+
+            //Ambiguous piece moves
+            if (possiblePiecesToMove.Count != 1 || (pieceMoving.Item1 == Piece.Pawn && isTaking)) {
+               if (possiblePiecesToMove.Count == 0)
+                  throw new Exception($"Move {i + 1} is an illegal move.");
+               if (pieceMoving.Item1 == Piece.Pawn) {
+                  algNotation += (char)(oldSpot.x + 97);
+               }
+               else {
+                  var FileIsAmbiguous = possiblePiecesToMove.GroupBy(x => x.Item1).Any(x => x.Count() > 1);
+                  var RankIsAmbiguous = possiblePiecesToMove.GroupBy(x => x.Item2).Any(x => x.Count() > 1);
+                  if (FileIsAmbiguous)
+                     algNotation += (char)(oldSpot.x + 97);
+                  if (RankIsAmbiguous)
+                     algNotation += (8 - oldSpot.y).ToString();
+               }
+            }
             //Piece taking symbol (x)
-            if (pieceLandedon.Item1 != Piece.None)
+            if (isTaking)
                algNotation += "x";
             //Convert to alg notaion (e4, d5, etc)
             algNotation += ((char)(newSpot.x + 97)).ToString() + (8 - newSpot.y).ToString();
@@ -104,18 +124,88 @@
          return a.Length == b.Length && a.Intersect(b).Count() == a.Length;
       }
 
-   }
-   /// <summary>
-   /// Each number corresponds to the ascii character that each piece translates to in algebraic notation
-   /// Except for the pawn, of course
-   /// </summary>
-   public enum Piece {
-      None = 0,
-      Pawn = 1,
-      King = 75,
-      Queen = 81,
-      Rook = 82,
-      Bishop = 66,
-      Knight = 78
+      private List<(int x, int y)> GetPeicePossibleMoves((int x, int y) pos) {
+         var piece = state[pos.y, pos.x];
+         switch (piece.Item1) {
+            case Piece.None:
+               return [];
+            case Piece.King:
+               //This logic does not need more sofistication with checks, as this will only be used with ambiguous moves, which should never happen with kings
+               return FilterInvalidMoves([
+                  (pos.x - 1, pos.y),
+                  (pos.x + 1, pos.y),
+                  (pos.x, pos.y - 1),
+                  (pos.x, pos.y + 1),
+                  (pos.x - 1, pos.y - 1),
+                  (pos.x + 1, pos.y - 1),
+                  (pos.x - 1, pos.y + 1),
+                  (pos.x + 1, pos.y + 1)
+               ], piece.isBlack);
+            case Piece.Pawn:
+               var output = new List<(int x, int y)>();
+               (int x, int y) aheadSpot = (pos.x, pos.y + (piece.isBlack ? 1 : -1));
+               if (0 > aheadSpot.y || aheadSpot.y > 7)
+                  return [];
+               if (state[aheadSpot.y, aheadSpot.x].Item1 == Piece.None)
+                  output.Add(aheadSpot);
+               output.Add((aheadSpot.x + 1, aheadSpot.y));
+               output.Add((aheadSpot.x - 1, aheadSpot.y));
+               //If its the first time the pawn has moved, it can move 2
+               if ((piece.isBlack && pos.y == 1) || (!piece.isBlack && pos.y == 6))
+                  output.Add((aheadSpot.x, aheadSpot.y + (piece.isBlack ? 1 : -1)));
+               return FilterInvalidMoves(output, piece.isBlack);
+            case Piece.Knight:
+               return FilterInvalidMoves([
+                  (pos.x + 2, pos.y + 1),
+                  (pos.x + 1, pos.y + 2),
+                  (pos.x - 2, pos.y + 1),
+                  (pos.x - 1, pos.y + 2),
+                  (pos.x + 2, pos.y - 1),
+                  (pos.x + 1, pos.y - 2),
+                  (pos.x - 2, pos.y - 1),
+                  (pos.x - 1, pos.y - 2)
+                  ], piece.isBlack);
+            case Piece.Rook:
+               return GetValidSlidingMoves(pos, piece.isBlack, [(1, 0), (-1, 0), (0, 1), (0, -1)]);
+            case Piece.Bishop:
+               return GetValidSlidingMoves(pos, piece.isBlack, [(1, 1), (-1, 1), (1, -1), (-1, -1)]);
+            case Piece.Queen:
+               return GetValidSlidingMoves(pos, piece.isBlack, [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1)]);
+            default:
+               return [];
+         }
+      }
+
+      private List<(int x, int y)> FilterInvalidMoves(List<(int x, int y)> moves, bool isBlack) {
+         return moves
+            .Where(x => x.x >= 0 && x.y >= 0 && x.x < 8 && x.y < 8)
+            //If empty spot or enemy spot
+            .Where(x => this.state[x.y, x.x].Item1 == Piece.None || this.state[x.y, x.x].isBlack == !isBlack)
+            .ToList();
+      }
+      /// <summary>
+      /// 
+      /// </summary>
+      /// <param name="pos"></param>
+      /// <param name="isBlack"></param>
+      /// <param name="directions">Directions that the peice can slide, ex (1,1) for up left, or (1,0) for right</param>
+      /// <returns></returns>
+      private List<(int x, int y)> GetValidSlidingMoves((int x, int y) pos, bool isBlack, (int x, int y)[] directions) {
+         var output = new List<(int x, int y)>();
+         foreach (var (dx, dy) in directions) {
+            for (var i = 1; 0 <= pos.x + dx * i && pos.x + dx * i < 8 && 0 <= pos.y + dy * i && pos.y + dy * i < 8; i++) {
+               (int x, int y) currentPos = (pos.x + dx * i, pos.y + dy * i);
+               var piece = state[currentPos.y, currentPos.x];
+               if (piece.Item1 != Piece.None) {
+                  if (piece.isBlack == !isBlack)
+                     output.Add(currentPos);
+                  break;
+               }
+               output.Add(currentPos);
+            }
+         }
+         return output;
+
+      }
    }
 }
