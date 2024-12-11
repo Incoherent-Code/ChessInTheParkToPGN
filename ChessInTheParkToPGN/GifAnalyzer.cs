@@ -43,8 +43,9 @@ namespace ChessInTheParkToPGN {
             currentNameImage.SaveAsBmp(currentStream);
          }
          string currentPlayerName;
-         if (Directory.Exists("tessdata") && File.Exists($"tessdata/{lang}.traineddata")) {
-            using (TesseractEngine TEngine = new TesseractEngine("tessdata", lang, EngineMode.Default)) {
+         var tessPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tessdata");
+         if (Directory.Exists(tessPath) && File.Exists(Path.Combine(tessPath, $"{lang}.traineddata"))) {
+            using (TesseractEngine TEngine = new TesseractEngine(tessPath, lang, EngineMode.Default)) {
                using (var page = TEngine.Process(Pix.LoadFromMemory(opposingStream.ToArray()))) {
                   opposingPlayerName = page.GetText().Trim();
                }
