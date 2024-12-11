@@ -7,6 +7,7 @@
 
 namespace ChessInTheParkToPGN {
    internal class Program {
+      private static int errorAmount = 0;
       static void Main(string[] args) {
          if (args.Length == 0) {
             ErrorMessage("Please start the analyzer with a valid file path!");
@@ -26,11 +27,13 @@ namespace ChessInTheParkToPGN {
                Console.WriteLine($"Saved {fileName} to \"{savePath}\"");
             }
             catch (Exception ex) {
-               ErrorMessage($"Error reading Gif {i + 1}: " + ex.Message);
+               ErrorMessage($"Error reading Gif {Path.GetFileName(arg)}: " + ex.Message);
+               errorAmount++;
                if (Debugger.IsAttached)
                   throw;
             }
          }
+         Environment.Exit(errorAmount);
       }
       public static void ErrorMessage(string message) {
          Console.ForegroundColor = ConsoleColor.Red;
