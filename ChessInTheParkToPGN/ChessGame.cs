@@ -92,7 +92,7 @@
             //Build algebraic chess notation
             string algNotation = (pieceMoving.Item1 != Piece.Pawn) ? ((char)pieceMoving.Item1).ToString() : "";
             bool isEnPassant = pieceMoving.Item1 == Piece.Pawn && newSpot.x != oldSpot.x && pieceLandedon.Item1 == Piece.None;
-            bool isTaking = pieceLandedon.Item1 != Piece.None || is;
+            bool isTaking = pieceLandedon.Item1 != Piece.None || isEnPassant;
             var possiblePiecesToMove = state.FindIndexes((piece, index) => {
                return piece == pieceMoving && GetPeicePossibleMoves((index.Item2, index.Item1)).Contains(newSpot);
             });
