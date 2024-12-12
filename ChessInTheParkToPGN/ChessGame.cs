@@ -33,6 +33,10 @@
          for (int i = 0; i < analyzer.moves; i++) {
             var blackIsMoving = i % 2 == 1;
             var diff = analyzer.differences[i];
+            //Invert board if from black pov
+            if (analyzer.fromBlackPOV) {
+               diff = diff.Select(cord => (7 - cord.x, 7 - cord.y)).ToArray();
+            }
             //If not moving just one piece, maybe they are castling
             if (diff.Length != 2) {
                if (!blackIsMoving && SameDiffrence(diff, whiteLongCastleDiff)) {
@@ -41,6 +45,8 @@
                   state[7, 2] = (Piece.King, false);
                   state[7, 3] = (Piece.Rook, false);
                   state[7, 4] = EmptySpot;
+                  var shadowSpace = analyzer.fromBlackPOV ? (3, 0) : (4, 7);
+                  analyzer.differences[i + 1] = analyzer.differences[i + 1].Where(x => x != shadowSpace).ToArray();
                   continue;
                }
                else if (!blackIsMoving && SameDiffrence(diff, whiteShortCastleDiff)) {
@@ -49,6 +55,8 @@
                   state[7, 5] = (Piece.Rook, false);
                   state[7, 6] = (Piece.King, false);
                   state[7, 7] = EmptySpot;
+                  var shadowSpace = analyzer.fromBlackPOV ? (3, 0) : (4, 7);
+                  analyzer.differences[i + 1] = analyzer.differences[i + 1].Where(x => x != shadowSpace).ToArray();
                   continue;
                }
                else if (blackIsMoving && SameDiffrence(diff, blackLongCastleDiff)) {
@@ -57,6 +65,8 @@
                   state[0, 2] = (Piece.King, true);
                   state[0, 3] = (Piece.Rook, true);
                   state[0, 4] = EmptySpot;
+                  var shadowSpace = analyzer.fromBlackPOV ? (3, 7) : (4, 0);
+                  analyzer.differences[i + 1] = analyzer.differences[i + 1].Where(x => x != shadowSpace).ToArray();
                   continue;
                }
                else if (blackIsMoving && SameDiffrence(diff, blackShortCastleDiff)) {
@@ -65,6 +75,8 @@
                   state[0, 5] = (Piece.Rook, true);
                   state[0, 6] = (Piece.King, true);
                   state[0, 7] = EmptySpot;
+                  var shadowSpace = analyzer.fromBlackPOV ? (3, 7) : (4, 0);
+                  analyzer.differences[i + 1] = analyzer.differences[i + 1].Where(x => x != shadowSpace).ToArray();
                   continue;
                }
                else {
@@ -110,6 +122,14 @@
             result.moves.Add(algNotation);
             state[newSpot.y, newSpot.x] = pieceMoving;
             state[oldSpot.y, oldSpot.x] = EmptySpot;
+
+            //Remove Shadow diff from next entry
+            //The only valid diffs would be even so do not modify if the diff count is even
+            if (analyzer.differences.Count > i + 1 && analyzer.differences[i + 1].Length % 2 == 1) {
+               //Flip old spot back if it was flipped earlier
+               (int x, int y) normOldSpot = analyzer.fromBlackPOV ? (7 - oldSpot.x, 7 - oldSpot.y) : oldSpot;
+               analyzer.differences[i + 1] = analyzer.differences[i + 1].Where(x => x != normOldSpot).ToArray();
+            }
          }
       }
       public void saveToFile(string path) {

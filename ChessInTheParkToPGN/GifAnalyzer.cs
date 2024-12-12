@@ -55,7 +55,7 @@ namespace ChessInTheParkToPGN {
             }
          }
          else {
-            Program.ErrorMessage("Could not load the training data for Tesseract. Please ensure that the English tesseract data is placed in ./tessdata. Name recognition will not run.");
+            Program.ErrorMessage("Could not load the training data for Tesseract. Please ensure that the English tesseract data is placed in /tessdata. Name recognition will not run.");
             currentPlayerName = "Player1";
             opposingPlayerName = "Player2";
          }
@@ -67,8 +67,8 @@ namespace ChessInTheParkToPGN {
 
             //This is actually the second move of the game, because the first move is depicted in frame 1 with no frame of just the initial setup
             if (i == 1) {
-               if (diff.Length != 2) {
-                  throw new Exception("Failed to interpret first move. Maybe try a more contrasty chess theme?");
+               if (diff.Length != 3) {
+                  throw new Exception("Failed to interpret second move. Maybe try a more contrasty chess theme?");
                }
                //If Second move is on this side, then this is from black POV
                fromBlackPOV = diff[1].y >= 4;
@@ -91,12 +91,6 @@ namespace ChessInTheParkToPGN {
                differences.Add([likelyMovedFromSpot, likelyMovedToSpot]);
             }
             differences.Add(diff);
-         }
-         //Invert board if from black pov
-         if (fromBlackPOV) {
-            differences = differences
-               .Select<(int x, int y)[], (int x, int y)[]>(x => x.Select(y => (7 - y.x, 7 - y.y)).ToArray())
-               .ToList();
          }
       }
       /// <summary>

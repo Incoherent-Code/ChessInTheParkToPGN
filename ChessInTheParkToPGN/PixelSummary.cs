@@ -30,14 +30,14 @@ namespace ChessInTheParkToPGN {
             }
          }
       }
-      private static readonly double maxDiffForResidualShadow = 0.09;
+      private static readonly double shadowRatioTolerance = 0.1;
       /// <summary>
       /// Takes in another pixel summary and find all the cordinates where any color exceeds the maxDifference
       /// </summary>
       /// <param name="other"></param>
       /// <param name="maxDifference">Max difference any one value (R,G, or B) can have</param>
       /// <returns></returns>
-      public (int x, int y)[] Compare(PixelSummary other, int maxDifference = 1) {
+      public (int x, int y)[] Compare(PixelSummary other, int maxDifference = 4) {
          List<(int, int)> output = [];
          for (int x = 0; x < 8; x++) {
             for (int y = 0; y < 8; y++) {
@@ -46,15 +46,13 @@ namespace ChessInTheParkToPGN {
                if (Math.Abs(thisAveragePixel.R - otherAveragePixel.R) > maxDifference
                   || Math.Abs(thisAveragePixel.G - otherAveragePixel.G) > maxDifference
                   || Math.Abs(thisAveragePixel.B - otherAveragePixel.B) > maxDifference) {
-                  double ratioR = (double)otherAveragePixel.R / thisAveragePixel.R;
-                  double ratioG = (double)otherAveragePixel.G / thisAveragePixel.G;
-                  double ratioB = (double)otherAveragePixel.B / thisAveragePixel.B;
-                  //If the square has just lightened, ignore it (Has the same ratio of change)
-                  if (Math.Abs(ratioR - ratioG) > maxDiffForResidualShadow
-                     || Math.Abs(ratioG - ratioB) > maxDiffForResidualShadow
-                     || Math.Abs(ratioB - ratioR) > maxDiffForResidualShadow) {
-                     output.Add((x, y));
-                  }
+                  //double ratioR = (double)otherAveragePixel.R / thisAveragePixel.R;
+                  //double ratioG = (double)otherAveragePixel.G / thisAveragePixel.G;
+                  //double ratioB = (double)otherAveragePixel.B / thisAveragePixel.B;
+                  ////If the square has just lightened, ignore it (Has the same ratio of change)
+                  //if (IsCloseTo(ratioR, ratioG, shadowRatioTolerance) && IsCloseTo(ratioG, ratioB, shadowRatioTolerance) && IsCloseTo(ratioB, ratioR, shadowRatioTolerance))
+                  //   continue;
+                  output.Add((x, y));
                }
             }
          }
@@ -79,6 +77,9 @@ namespace ChessInTheParkToPGN {
             }
          }
          return output;
+      }
+      private static bool IsCloseTo(double value, double other, double tolerance) {
+         return value + tolerance >= other && value - tolerance <= other;
       }
       public static Rgb24 averagePixels(Rgb24[] pixels) {
          return new Rgb24(
