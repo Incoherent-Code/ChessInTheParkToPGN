@@ -1,10 +1,5 @@
 ﻿using System.Diagnostics;
 
-/* TODO:
- * Add support for En Passant
- * Add support for promotion
- */
-
 namespace ChessInTheParkToPGN {
    internal class Program {
       private static int errorAmount = 0;

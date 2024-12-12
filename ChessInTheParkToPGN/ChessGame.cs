@@ -91,10 +91,15 @@
 
             //Build algebraic chess notation
             string algNotation = (pieceMoving.Item1 != Piece.Pawn) ? ((char)pieceMoving.Item1).ToString() : "";
-            bool isTaking = (pieceLandedon.Item1 != Piece.None);
+            bool isEnPassant = pieceMoving.Item1 == Piece.Pawn && newSpot.x != oldSpot.x && pieceLandedon.Item1 == Piece.None;
+            bool isTaking = pieceLandedon.Item1 != Piece.None || is;
             var possiblePiecesToMove = state.FindIndexes((piece, index) => {
                return piece == pieceMoving && GetPeicePossibleMoves((index.Item2, index.Item1)).Contains(newSpot);
             });
+
+            //En Passant
+            if (isEnPassant)
+               state[newSpot.y + (blackIsMoving ? -1 : 1), newSpot.x] = (Piece.None, false);
 
             //Ambiguous piece moves
             if (possiblePiecesToMove.Count != 1 || (pieceMoving.Item1 == Piece.Pawn && isTaking)) {
@@ -118,6 +123,9 @@
             //Convert to alg notaion (e4, d5, etc)
             algNotation += ((char)(newSpot.x + 97)).ToString() + (8 - newSpot.y).ToString();
             //TODO: Checks and mates
+
+            if (isEnPassant)
+               algNotation += "(ep)";
 
             result.moves.Add(algNotation);
             state[newSpot.y, newSpot.x] = pieceMoving;
