@@ -5,7 +5,7 @@
       /// Do note, the x and y axis are inverted between gif analyzer and this
       /// So using it would be state[y, x]
       /// </summary>
-      private (Piece, bool isBlack)[,] state = new (Piece, bool isBlack)[8, 8] {
+      private (Piece Piece, bool isBlack)[,] state = new (Piece, bool isBlack)[8, 8] {
          {(Piece.Rook, true), (Piece.Knight, true), (Piece.Bishop, true), (Piece.Queen, true), (Piece.King, true), (Piece.Bishop, true), (Piece.Knight, true), (Piece.Rook, true)},
          {(Piece.Pawn, true), (Piece.Pawn, true), (Piece.Pawn, true), (Piece.Pawn, true), (Piece.Pawn, true), (Piece.Pawn, true), (Piece.Pawn, true), (Piece.Pawn, true)},
          {(Piece.None, false), (Piece.None, false), (Piece.None, false), (Piece.None, false), (Piece.None, false), (Piece.None, false), (Piece.None, false), (Piece.None, false)},
@@ -16,6 +16,23 @@
          {(Piece.Rook, false), (Piece.Knight, false), (Piece.Bishop, false), (Piece.Queen, false), (Piece.King, false), (Piece.Bishop, false), (Piece.Knight, false), (Piece.Rook, false)}
       };
       private static readonly (Piece, bool isBlack) EmptySpot = (Piece.None, false);
+      private (Piece Piece, bool isBlack) GetState((int x, int y) pos) {
+         return state[pos.y, pos.x];
+      }
+      private (Piece Piece, bool isBlack) GetStateSafe((int x, int y) pos) {
+         if (8 > pos.x && pos.x > 0 && 8 > pos.y && pos.y > 0) {
+            return state[pos.y, pos.x];
+         }
+         return EmptySpot;
+      }
+      private void SetState((int x, int y) pos, (Piece Piece, bool isBlack) piece) {
+         state[pos.y, pos.x] = piece;
+      }
+      private void SetStateSafe((int x, int y) pos, (Piece Piece, bool isBlack) piece) {
+         if (8 > pos.x && pos.x > 0 && 8 > pos.y && pos.y > 0) {
+            state[pos.y, pos.x] = piece;
+         }
+      }
 
       public PGN result = new PGN();
       public GifAnalyzer analyzer;
@@ -40,7 +57,7 @@
             //If not moving just one piece, maybe they are castling
             if (diff.Length != 2) {
                if (!blackIsMoving && SameDiffrence(diff, whiteLongCastleDiff)) {
-                  result.moves.Add("0-0-0");
+                  result.moves.Add("O-O-O");
                   state[7, 0] = EmptySpot;
                   state[7, 2] = (Piece.King, false);
                   state[7, 3] = (Piece.Rook, false);
@@ -50,7 +67,7 @@
                   continue;
                }
                else if (!blackIsMoving && SameDiffrence(diff, whiteShortCastleDiff)) {
-                  result.moves.Add("0-0");
+                  result.moves.Add("O-O");
                   state[7, 4] = EmptySpot;
                   state[7, 5] = (Piece.Rook, false);
                   state[7, 6] = (Piece.King, false);
@@ -60,7 +77,7 @@
                   continue;
                }
                else if (blackIsMoving && SameDiffrence(diff, blackLongCastleDiff)) {
-                  result.moves.Add("0-0-0");
+                  result.moves.Add("O-O-O");
                   state[0, 0] = EmptySpot;
                   state[0, 2] = (Piece.King, true);
                   state[0, 3] = (Piece.Rook, true);
@@ -70,7 +87,7 @@
                   continue;
                }
                else if (blackIsMoving && SameDiffrence(diff, blackShortCastleDiff)) {
-                  result.moves.Add("0-0");
+                  result.moves.Add("O-O");
                   state[0, 4] = EmptySpot;
                   state[0, 5] = (Piece.Rook, true);
                   state[0, 6] = (Piece.King, true);
@@ -122,7 +139,7 @@
                else {
                   var FileIsAmbiguous = possiblePiecesToMove.GroupBy(x => x.Item1).Any(x => x.Count() > 1);
                   var RankIsAmbiguous = possiblePiecesToMove.GroupBy(x => x.Item2).Any(x => x.Count() > 1);
-                  if (FileIsAmbiguous)
+                  if (FileIsAmbiguous || !RankIsAmbiguous)
                      algNotation += (char)(oldSpot.x + 97);
                   if (RankIsAmbiguous)
                      algNotation += (8 - oldSpot.y).ToString();
@@ -180,12 +197,19 @@
             case Piece.Pawn:
                var output = new List<(int x, int y)>();
                (int x, int y) aheadSpot = (pos.x, pos.y + (piece.isBlack ? 1 : -1));
+               (int x, int y) aheadLeft = (aheadSpot.x + 1, aheadSpot.y);
+               var pieceAtAheadLeft = GetStateSafe(aheadLeft);
+               (int x, int y) aheadRight = (aheadSpot.x - 1, aheadSpot.y);
+               var pieceAtAheadRight = GetStateSafe(aheadRight);
                if (0 > aheadSpot.y || aheadSpot.y > 7)
                   return [];
                if (state[aheadSpot.y, aheadSpot.x].Item1 == Piece.None)
                   output.Add(aheadSpot);
-               output.Add((aheadSpot.x + 1, aheadSpot.y));
-               output.Add((aheadSpot.x - 1, aheadSpot.y));
+               //If it can capture ahead
+               if (pieceAtAheadLeft.Item1 != Piece.None && pieceAtAheadLeft.isBlack == !piece.isBlack)
+                  output.Add(aheadLeft);
+               if (pieceAtAheadRight.Item1 != Piece.None && pieceAtAheadRight.isBlack == !piece.isBlack)
+                  output.Add(aheadRight);
                //If its the first time the pawn has moved, it can move 2
                if ((piece.isBlack && pos.y == 1) || (!piece.isBlack && pos.y == 6))
                   output.Add((aheadSpot.x, aheadSpot.y + (piece.isBlack ? 1 : -1)));
