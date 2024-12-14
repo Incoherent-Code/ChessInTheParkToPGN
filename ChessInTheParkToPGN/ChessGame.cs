@@ -79,6 +79,21 @@
                   analyzer.differences[i + 1] = analyzer.differences[i + 1].Where(x => x != shadowSpace).ToArray();
                   continue;
                }
+               //En passant Dif
+               //Shadow isnt remove from previous move due to even diff so we need to account for that
+               else if (diff.Count(x => state[x.y, x.x].Item1 == Piece.Pawn) == 2 && diff.Count(x => state[x.y, x.x].Item1 == Piece.None) == 2) {
+                  var enPassantSpot = diff.First(x => state[x.y, x.x] == (Piece.Pawn, blackIsMoving));
+                  var takenSpot = diff.First(x => state[x.y, x.x] == (Piece.Pawn, !blackIsMoving));
+                  foreach (var pos in diff) {
+                     state[pos.y, pos.x] = (Piece.None, false);
+                  }
+                  state[takenSpot.y + (blackIsMoving ? 1 : -1), takenSpot.x] = (Piece.Pawn, blackIsMoving);
+                  var algnotation = $"{(char)(enPassantSpot.x + 97)}x{(char)(takenSpot.x + 97)}{(7 - takenSpot.y)}";
+                  result.moves.Add(algnotation);
+                  if (analyzer.differences.Count > i + 1)
+                     analyzer.differences[i + 1] = analyzer.differences[i + 1].Where(x => x != (analyzer.fromBlackPOV ? (7 - enPassantSpot.x, 7 - enPassantSpot.y) : enPassantSpot)).ToArray();
+                  continue;
+               }
                else {
                   throw new Exception("Could not identify move " + (i + 1));
                }
@@ -96,10 +111,6 @@
             var possiblePiecesToMove = state.FindIndexes((piece, index) => {
                return piece == pieceMoving && GetPeicePossibleMoves((index.Item2, index.Item1)).Contains(newSpot);
             });
-
-            //En Passant
-            if (isEnPassant)
-               state[newSpot.y + (blackIsMoving ? -1 : 1), newSpot.x] = (Piece.None, false);
 
             //Ambiguous piece moves
             if (possiblePiecesToMove.Count != 1 || (pieceMoving.Item1 == Piece.Pawn && isTaking)) {
@@ -123,9 +134,6 @@
             //Convert to alg notaion (e4, d5, etc)
             algNotation += ((char)(newSpot.x + 97)).ToString() + (8 - newSpot.y).ToString();
             //TODO: Checks and mates
-
-            if (isEnPassant)
-               algNotation += "(ep)";
 
             result.moves.Add(algNotation);
             state[newSpot.y, newSpot.x] = pieceMoving;
