@@ -10,7 +10,7 @@ namespace ChessInTheParkToPGN {
       public string whitePlayer = "Player1";
       public string blackPlayer = "Player2";
       public int moves;
-      private static readonly string lang = "eng";
+      public static string TessDataPath { get { return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tessdata"); } }
 
       public List<(int x, int y)[]> differences = [];
       public GifAnalyzer(Stream fileStream) {
@@ -43,9 +43,8 @@ namespace ChessInTheParkToPGN {
             currentNameImage.SaveAsBmp(currentStream);
          }
          string currentPlayerName;
-         var tessPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tessdata");
-         if (Directory.Exists(tessPath) && File.Exists(Path.Combine(tessPath, $"{lang}.traineddata"))) {
-            using (TesseractEngine TEngine = new TesseractEngine(tessPath, lang, EngineMode.Default)) {
+         if (Program.useTessearct && File.Exists(Path.Combine(TessDataPath, $"{Program.tesseractLanguage}.traineddata"))) {
+            using (TesseractEngine TEngine = new TesseractEngine(TessDataPath, Program.tesseractLanguage, EngineMode.Default)) {
                using (var page = TEngine.Process(Pix.LoadFromMemory(opposingStream.ToArray()))) {
                   opposingPlayerName = page.GetText().Trim();
                }
@@ -55,7 +54,7 @@ namespace ChessInTheParkToPGN {
             }
          }
          else {
-            Program.ErrorMessage("Could not load the training data for Tesseract. Please ensure that the English tesseract data is placed in /tessdata. Name recognition will not run.");
+            //Program.ErrorMessage("Could not load the training data for Tesseract. Please ensure that the English tesseract data is placed in /tessdata. Name recognition will not run.");
             currentPlayerName = "Player1";
             opposingPlayerName = "Player2";
          }
