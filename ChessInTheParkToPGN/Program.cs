@@ -5,7 +5,8 @@ namespace ChessInTheParkToPGN {
       private static string helpText = @"ChessInTheParkToPGN Options:
  -h       -  Displays this help message and exits
  -l [arg] -  OCR language (ex: eng) (Corresponding tesseract file must be present in the /tessdata folder
- -l off   -  Disables OCR (May be necessary on UNIX)";
+ -l off   -  Disables OCR (May be necessary on UNIX)
+ [file]   -  Gif file to analyze and spit out a game pgn. (you can have any amount of these)";
 
       private static int errorAmount = 0;
       public static List<string> pathsToProcess = [];
@@ -51,6 +52,8 @@ namespace ChessInTheParkToPGN {
             }
          }
 
+         var timer = Stopwatch.StartNew();
+
          foreach (var path in pathsToProcess) {
             if (!File.Exists(path)) {
                ErrorMessage($"Invalid file Path: {path}");
@@ -70,7 +73,8 @@ namespace ChessInTheParkToPGN {
                   throw;
             }
          }
-
+         timer.Stop();
+         Console.WriteLine($"Finished analyzing {pathsToProcess.Count - errorAmount} games in {timer.Elapsed.Seconds} seconds.");
          Environment.Exit(errorAmount);
       }
       public static void ErrorMessage(string message) {
