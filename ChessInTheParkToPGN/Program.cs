@@ -6,12 +6,14 @@ namespace ChessInTheParkToPGN {
  -h       -  Displays this help message and exits
  -l [arg] -  OCR language (ex: eng) (Corresponding tesseract file must be present in the /tessdata folder
  -l off   -  Disables OCR (May be necessary on UNIX)
+ -o       -  Output Directory
  [file]   -  Gif file to analyze and spit out a game pgn. (you can have any amount of these)";
 
       private static int errorAmount = 0;
       public static List<string> pathsToProcess = [];
       public static bool useTessearct = true;
       public static string tesseractLanguage = "eng";
+      public static string outputPath = Directory.GetCurrentDirectory();
       static void Main(string[] args) {
          //Handle arguments
          for (int i = 0; i < args.Length; i++) {
@@ -42,6 +44,19 @@ namespace ChessInTheParkToPGN {
                   //skip next argument
                   i++;
                   break;
+               case "-o":
+                  //No next argument
+                  if (i + 1 > args.Length)
+                     break;
+                  var nextArg = args[i + 1];
+                  if (Directory.Exists(nextArg)) {
+                     outputPath = nextArg;
+                  }
+                  else {
+                     ErrorMessage($"Invalid Output Path: \"{nextArg}\"");
+                  }
+                  i++;
+                  break;
                default:
                   if (!File.Exists(arg)) {
                      ErrorMessage($"Unknown File Path or argument: {arg}");
@@ -62,7 +77,7 @@ namespace ChessInTheParkToPGN {
             try {
                var game = new ChessGame(path);
                var fileName = Path.GetFileNameWithoutExtension(path) + ".pgn";
-               var savePath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
+               var savePath = Path.Combine(outputPath, fileName);
                game.saveToFile(savePath);
                Console.WriteLine($"Saved {fileName} to \"{savePath}\"");
             }
