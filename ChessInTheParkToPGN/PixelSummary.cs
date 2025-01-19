@@ -24,7 +24,7 @@ namespace ChessInTheParkToPGN {
             for (int y = 0; y < 8; y++) {
                var xCord = (int)Math.Ceiling(offsetX + squareSize * x) + 22;
                var yCord = (int)Math.Ceiling(offsetY + squareSize * y) + 22;
-               var pixels = getRange(frame, xCord, yCord, 5, 1);
+               var pixels = getRange(frame, xCord, yCord, 9, 0); //5, 1);
                var averagePixel = averagePixels(pixels);
                summary[x, y] = averagePixel;
             }

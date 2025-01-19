@@ -25,6 +25,9 @@
          }
          return EmptySpot;
       }
+      /// <summary>
+      /// Basically the same as state[0,0], but x and y are in the correct order.
+      /// </summary>
       private void SetState((int x, int y) pos, (Piece Piece, bool isBlack) piece) {
          state[pos.y, pos.x] = piece;
       }
@@ -152,6 +155,51 @@
             algNotation += ((char)(newSpot.x + 97)).ToString() + (8 - newSpot.y).ToString();
             //TODO: Checks and mates
 
+            //If pawn is promoting
+            //Pattern matching would be really difficult, so we're going to assume they are promoting to a queen
+            //Unless, we see that it makes a knight move later.
+            if (pieceMoving.Piece == Piece.Pawn && (newSpot.y == 0 || newSpot.y == 7)) {
+               //Find next move
+               int nextMove = -1;
+               for (int j = i; j < analyzer.differences.Count; j++) {
+                  var diffTemp = analyzer.differences[j];
+                  if (diffTemp.Contains(newSpot)) {
+                     nextMove = j;
+                     break;
+                  }
+               }
+               if (nextMove == -1) {
+                  //Assume Queen
+                  pieceMoving.Piece = Piece.Queen;
+                  algNotation += "=Q";
+               }
+               else {
+                  var nextDiff = analyzer.differences[nextMove].ToList();
+                  nextDiff.Remove(newSpot);
+                  //There is a pretty bad edge case where if the shadow of the previous move is at a valid knight move the promotion will be assumed to be a knight move
+                  //I dont have any other solutions though, I'm pretty close to just always assuming a queen promotion
+                  var validKnightMoves = new List<(int x, int y)>() {
+                  (newSpot.x + 2, newSpot.y + 1),
+                  (newSpot.x + 1, newSpot.y + 2),
+                  (newSpot.x - 2, newSpot.y + 1),
+                  (newSpot.x - 1, newSpot.y + 2),
+                  (newSpot.x + 2, newSpot.y - 1),
+                  (newSpot.x + 1, newSpot.y - 2),
+                  (newSpot.x - 2, newSpot.y - 1),
+                  (newSpot.x - 1, newSpot.y - 2)
+                  }.Where(pos => pos.x >= 0 && pos.x < 8 && pos.y >= 0 && pos.y < 8).ToList();
+                  bool isKnightMove = validKnightMoves.Any(x => nextDiff.Contains(x));
+                  if (isKnightMove) {
+                     pieceMoving.Piece = Piece.Knight;
+                     algNotation += "=N";
+                  }
+                  else {
+                     pieceMoving.Piece = Piece.Queen;
+                     algNotation += "=Q";
+                  }
+               }
+            }
+
             result.moves.Add(algNotation);
             state[newSpot.y, newSpot.x] = pieceMoving;
             state[oldSpot.y, oldSpot.x] = EmptySpot;
@@ -244,7 +292,7 @@
             .ToList();
       }
       /// <summary>
-      /// 
+      /// Determines valid sliding moves (rook, bishop, queen) based on vectors put into it.
       /// </summary>
       /// <param name="pos"></param>
       /// <param name="isBlack"></param>
