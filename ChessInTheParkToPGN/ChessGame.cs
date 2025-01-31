@@ -48,8 +48,26 @@
          using (var file = File.OpenRead(filePath)) {
             analyzer = new GifAnalyzer(file);
          }
+
          result.metadata.Add("White", analyzer.whitePlayer);
          result.metadata.Add("Black", analyzer.blackPlayer);
+         if (analyzer.terminationReason != null && analyzer.terminationReason != String.Empty) {
+            string cleanTermination = analyzer.terminationReason.ToLower().Trim();
+            if (cleanTermination.Contains("won") || cleanTermination.Contains("victory")) {
+               result.whiteWon = !analyzer.fromBlackPOV;
+               string winner = analyzer.fromBlackPOV ? "Black" : "White";
+               result.metadata.Add("Termination", $"{winner} won by checkmate");
+            }
+            else if (cleanTermination.Contains("lost")) {
+               result.whiteWon = analyzer.fromBlackPOV;
+               string winner = !analyzer.fromBlackPOV ? "Black" : "White";
+               result.metadata.Add("Termination", $"{winner} won by checkmate");
+            }
+            else {
+               result.metadata.Add("Termination", analyzer.terminationReason);
+            }
+         }
+
          for (int i = 0; i < analyzer.moves; i++) {
             var blackIsMoving = i % 2 == 1;
             var diff = analyzer.differences[i];

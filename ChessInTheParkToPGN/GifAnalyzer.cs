@@ -9,11 +9,15 @@ namespace ChessInTheParkToPGN {
       public bool fromBlackPOV = false;
       public string whitePlayer = "Player1";
       public string blackPlayer = "Player2";
+      public string? terminationReason;
       public int moves;
       public static string TessDataPath { get { return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tessdata"); } }
 
       public List<(int x, int y)[]> differences = [];
       public GifAnalyzer(Stream fileStream) {
+         string currentPlayerName;
+         string opposingPlayerName;
+
          var image = Image.Load<Rgb24>(fileStream);
          if (image.Frames.Count <= 1) {
             throw new Exception("Invalid Image Format!");
@@ -32,7 +36,7 @@ namespace ChessInTheParkToPGN {
             );
             opposingNameImage.SaveAsBmp(opposingStream);
          }
-         string opposingPlayerName;
+
          var currentStream = new MemoryStream();
          using (var currentNameImage = image.Frames.CloneFrame(0)) {
             currentNameImage.Mutate(i => i
@@ -42,7 +46,19 @@ namespace ChessInTheParkToPGN {
             );
             currentNameImage.SaveAsBmp(currentStream);
          }
-         string currentPlayerName;
+
+         //Read termination from text
+         var terminationStream = new MemoryStream();
+         using (var terminationTextImage = image.Frames.CloneFrame(0)) {
+            terminationTextImage.Mutate(i => i
+               .Crop(new Rectangle(0, 100, 174, 174))
+               //More optimal settings for Tesseract
+               .Grayscale()
+            //Already at near optimal size
+            );
+            terminationTextImage.SaveAsBmp(terminationStream);
+         }
+
          if (Program.useTessearct && File.Exists(Path.Combine(TessDataPath, $"{Program.tesseractLanguage}.traineddata"))) {
             using (TesseractEngine TEngine = new TesseractEngine(TessDataPath, Program.tesseractLanguage, EngineMode.Default)) {
                using (var page = TEngine.Process(Pix.LoadFromMemory(opposingStream.ToArray()))) {
@@ -50,6 +66,9 @@ namespace ChessInTheParkToPGN {
                }
                using (var page = TEngine.Process(Pix.LoadFromMemory(currentStream.ToArray()))) {
                   currentPlayerName = page.GetText().Trim();
+               }
+               using (var page = TEngine.Process(Pix.LoadFromMemory(terminationStream.ToArray()))) {
+                  this.terminationReason = page.GetText().Trim();
                }
             }
          }
